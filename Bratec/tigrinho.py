@@ -50,7 +50,7 @@ def robozinho():
         link = paste()
         utils.checarFailsafe()
         options = webdriver.ChromeOptions()
-        options.add_argument(r'user-data-dir=C:\Users\User\AppData\Local\Google\Chrome\User Data\Perfil Selenium')
+        options.add_argument(r'user-data-dir=C:\Users\Usuario\AppData\Local\Google\Chrome\User Data\Profile Selenium')
         driver = webdriver.Chrome(options=options)
         sleep(0.5)
         driver.get(link)
@@ -96,7 +96,7 @@ def robozinho():
                                     return robozinho()
                                 else:
                                     driver.quit() 
-                                break
+                                    break
 
                             except Exception as e:
                                 tempo_max += 1 
@@ -129,7 +129,7 @@ def robozinho():
         sleep(0.3)
 
 
-        caminho = "C:\\Users\\User\\OneDrive - EQS Engenharia Ltda\\Área de Trabalho\\xmlFiscalio\\" + chave_de_acesso + ".xml"
+        caminho = "C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\" + chave_de_acesso + ".xml"
 
         while True:
             try:
@@ -156,10 +156,11 @@ def robozinho():
                         mouseClique(x,y, clicks=2)
                         utils.checarFailsafe()
                         break
+                        
                 sleep(2)
                 x, y = caixa_de_texto
                 mouseClique(x,y, clicks=3, interval=0.07)
-                copy("C:\\Users\\User\\OneDrive - EQS Engenharia Ltda\\Área de Trabalho\\xmlFiscalio\\")
+                copy("C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\")
                 hotkey("ctrl", "v")
                 sleep(1)
                 press(["tab"]*6, interval=0.5)
@@ -187,7 +188,7 @@ def robozinho():
                     sleep(0.5)
                     aparece_enter2 = utils.encontrarImagem(r'Imagens\XMLEnter2.png')
                     utils.checarFailsafe()
-                caminho = "C:\\Users\\User\\OneDrive - EQS Engenharia Ltda\\Área de Trabalho\\xmlFiscalio\\" + chave_de_acesso + ".xml"
+                caminho = "C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\" + chave_de_acesso + ".xml"
                 auxiliar = False
             except:
                 auxiliar = True
@@ -219,6 +220,20 @@ def robozinho():
                     impostos_xml = doc["enviNFe"]["NFe"]["infNFe"]["det"]["imposto"]
                     valores_do_item = processador.coletarDadosXML(coletor_xml, impostos_xml)
                     break
+                except KeyError:
+                    try:
+                        coletor_xml = doc["NFe"]["infNFe"]["det"]["prod"]
+                        impostos_xml = doc["NFe"]["infNFe"]["det"]["imposto"]
+                        valores_do_item = processador.coletarDadosXML(coletor_xml, impostos_xml)
+                        break
+                    except TypeError:
+                        try:
+                            coletor_xml = doc["NFe"]["infNFe"]["det"][const_item]["prod"]
+                            impostos_xml = doc["NFe"]["infNFe"]["det"][const_item]["imposto"]
+                            valores_do_item = processador.coletarDadosXML(coletor_xml, impostos_xml)
+                            const_item += 1
+                        except IndexError:
+                            break
                 except TypeError:
                     try:
                         coletor_xml = doc["enviNFe"]["NFe"]["infNFe"]["det"][const_item]["prod"]
@@ -567,153 +582,145 @@ def robozinho():
             utils.checarFailsafe()
 
 
+        aba_duplicatas = utils.encontrarImagemLocalizada(r'Imagens\AbaDuplicatas.png')
+        x, y =  aba_duplicatas
+        mouseClique(x,y, clicks=4, interval=0.1)
+        sleep(0.6)
+        lista_parc = []
+        utils.clicarValorParcela()
+        sleep(0.5)
+        hotkey("ctrl", "c", interval=0.2)
+        utils.checarFailsafe()
+        valor_parcela = paste()
+        valor_parcela = utils.formatador4(valor_parcela)
+        if valor_parcela < valor_total_da_nf:
+            lista_parc.append(valor_parcela)
+            while round(sum(lista_parc),2) < valor_total_da_nf:
+                utils.descerECopiar()
+                erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
+                if type(erro_parcela) == pyscreeze.Box:
+                    press("enter", interval=0.7)
+                    press("enter", interval=0.7)
+                    lista_parc = lista_parc[:-1]
+                    valor_parc = valor_total_da_nf - round(sum(lista_parc),2)
+                    valor_parc = utils.formatador2(valor_parc)
+                    write(valor_parc, interval=0.03)
+                    press("left")
+                    lista_parc.append(float(valor_parc))
+                    print(lista_parc)
+                else:
+                    valor_parcela = paste()
+                    valor_parcela = utils.formatador4(valor_parcela)
+                    lista_parc.append(valor_parcela)
+            somatoria = utils.formatador2(sum(lista_parc))
+            somatoria = float(somatoria)
+            parcela_errada = lista_parc[-1]
+            if somatoria != valor_total_da_nf:
+                if lista_parc[-1] == lista_parc[-2]:
+                    parcela_errada = lista_parc.pop()
+                    somatoria = utils.formatador2(sum(lista_parc))
+                    somatoria = float(somatoria)
+                diferenca_NF_siga = valor_total_da_nf - somatoria 
+                ultima_parcela = parcela_errada + diferenca_NF_siga
+                ultima_parcela = "{:.2f}".format(ultima_parcela)  
+                mouseClique(x,y)
+                descida = len(lista_parc) - 1
+                press(["down"]*descida)
+                sleep(0.7)
+                write(ultima_parcela, interval=0.03)
+                utils.checarFailsafe()
+            sleep(1)
+        elif valor_parcela > valor_total_da_nf:
+            valor_total_da_nf = utils.formatador2(valor_total_da_nf)
+            write(valor_total_da_nf)
+            sleep(1)
+        utils.clicarNaturezaDuplicata()
+        sleep(1)
+        erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
+        if type(erro_parcela) == pyscreeze.Box:
+            press("enter")
+            utils.clicarValorParcela()
+            press(["left"]*2)
+            sleep(0.3)
+            hotkey("ctrl", "c", interval=0.1)
+            utils.checarFailsafe()
+            primeira_parc = paste()
+            ordem_parc = []
+            ordem_parc.append(primeira_parc)
+            if primeira_parc == '001':
+                utils.descerECopiar()
+                proxima_parcela = paste()
+                ordem_parc.append(proxima_parcela)
+                if ordem_parc[-2] != ordem_parc[-1]:
+                    while ordem_parc[-2] != ordem_parc[-1]:
+                        utils.descerECopiar()
+                        proxima_parcela = paste()
+                        ordem_parc.append(proxima_parcela)
+                        utils.checarFailsafe()
+                    ordem_parc.pop()
+                    valor_parcela = valor_total_da_nf / len(ordem_parc)
+                    valor_parcela = "{:.2f}".format(valor_parcela)
+                    utils.clicarValorParcela()
+                    for vezes in range(len(ordem_parc)):
+                        write(valor_parcela, interval=0.08)
+                        press("left")
+                        press("down")
+                        sleep(0.8)
+                    utils.checarFailsafe()
+                    valor_parcela = utils.formatador3(valor_parcela)
+                    valor_atingido = valor_parcela * len(ordem_parc)
+                    sleep(2)
+                    if valor_atingido != valor_total_da_nf:
+                        diferenca_NF_siga = valor_atingido - valor_total_da_nf
+                        valor_ultima_parcela = valor_parcela - diferenca_NF_siga
+                        valor_ultima_parcela = "{:.2f}".format(valor_ultima_parcela)
+                        write(valor_ultima_parcela, interval=0.08)
+                        sleep(2)
+            utils.clicarNaturezaDuplicata()
+            sleep(0.6)
+            erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
+            if type(erro_parcela) == pyscreeze.Box:
+                press("enter")
+                utils.cancelar2()
+                return robozinho()
+        hotkey("ctrl", "c", interval=0.2)
+        natureza_perc = paste() 
+        if natureza_perc != "0,00":
+            lista_perc = []
+            while round(sum(lista_perc),2) < 100.0:
+                natureza_perc = utils.formatador3(natureza_perc)
+                lista_perc.append(natureza_perc)
+                utils.descerECopiar()
+                natureza_perc = paste() 
+            maior_perc = max(lista_perc)
+            natureza_duplicata_clique = utils.encontrarImagemLocalizada(r'Imagens\naturezaDuplicata.png')
+            x, y = natureza_duplicata_clique
+            mouseClique(x,y)
+            press("up")
+            sleep(0.2)
+            hotkey("ctrl", "c", interval=0.1)
+            utils.checarFailsafe()
+            perc_majoritario = paste()
+            perc_majoritario = utils.formatador3(perc_majoritario)
+            while perc_majoritario != maior_perc:
+                utils.descerECopiar()
+                perc_majoritario = paste()
+                perc_majoritario = utils.formatador3(perc_majoritario)
+            press("left")
+            hotkey("ctrl", "c", interval=0.1)
+            natureza_duplicata = paste()
+            hotkey(["shift", "tab"]*5, interval=0.2)
+            write(natureza_duplicata)
+            press("tab")
+            sleep(1)
+            utils.checarFailsafe()
+
+
         salvar = utils.encontrarImagemLocalizada(r'Imagens\salvarLancamento.png')
         salvarx, salvary = salvar
         sleep(0.7)
         mouseClique(salvarx,salvary, clicks=2, interval=0.1)
         sleep(2)
-        erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
-        if type(erro_parcela) == pyscreeze.Box:
-            press("enter")
-            aba_duplicatas = utils.encontrarImagemLocalizada(r'Imagens\AbaDuplicatas.png')
-            x, y =  aba_duplicatas
-            mouseClique(x,y, clicks=4, interval=0.1)
-            if isinstance(parcelas, list):
-                ultima_parcela_nf = parcelas[-1]["vDup"]
-            else:
-                ultima_parcela_nf = parcelas
-            utils.clicarValorParcela()
-            sleep(3)
-            if isinstance(parcelas, list):
-                press(["down"]*len(parcelas))
-                press("enter")
-                write(ultima_parcela_nf, interval=0.05)
-            utils.clicarNaturezaDuplicata()
-            erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
-            if type(erro_parcela) == pyscreeze.Box:
-                while type(erro_parcela) == pyscreeze.Box:
-                    press("enter")
-                    sleep(1)
-                    erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
-                sleep(0.6)
-                lista_parc = []
-                utils.clicarValorParcela()
-                sleep(0.5)
-                hotkey("ctrl", "c", interval=0.2)
-                utils.checarFailsafe()
-                valor_parcela = paste()
-                valor_parcela = utils.formatador4(valor_parcela)
-                if valor_parcela < valor_total_da_nf:
-                    lista_parc.append(valor_parcela)
-                    while round(sum(lista_parc),2) < valor_total_da_nf:
-                        utils.descerECopiar()
-                        valor_parcela = paste()
-                        valor_parcela = utils.formatador4(valor_parcela)
-                        lista_parc.append(valor_parcela)
-                        utils.checarFailsafe()
-                    somatoria = utils.formatador2(sum(lista_parc))
-                    somatoria = float(somatoria)
-                    parcela_errada = lista_parc[-1]
-                    if somatoria != valor_total_da_nf:
-                        if lista_parc[-1] == lista_parc[-2]:
-                            parcela_errada = lista_parc.pop()
-                            somatoria = utils.formatador2(sum(lista_parc))
-                            somatoria = float(somatoria)
-                        diferenca_NF_siga = valor_total_da_nf - somatoria 
-                        ultima_parcela = parcela_errada + diferenca_NF_siga
-                        ultima_parcela = "{:.2f}".format(ultima_parcela)  
-                        mouseClique(x,y)
-                        descida = len(lista_parc) - 1
-                        press(["down"]*descida)
-                        sleep(0.4)
-                        press("enter")
-                        write(ultima_parcela, interval=0.03)
-                        utils.checarFailsafe()
-                    sleep(1)
-                elif valor_parcela > valor_total_da_nf:
-                    valor_total_da_nf = utils.formatador2(valor_total_da_nf)
-                    write(valor_total_da_nf)
-                    sleep(1)
-                utils.clicarNaturezaDuplicata()
-                sleep(1)
-                erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
-                if type(erro_parcela) == pyscreeze.Box:
-                    press("enter")
-                    utils.clicarValorParcela()
-                    press(["left"]*2)
-                    sleep(0.3)
-                    hotkey("ctrl", "c", interval=0.1)
-                    utils.checarFailsafe()
-                    primeira_parc = paste()
-                    ordem_parc = []
-                    ordem_parc.append(primeira_parc)
-                    if primeira_parc == '001':
-                        utils.descerECopiar()
-                        proxima_parcela = paste()
-                        ordem_parc.append(proxima_parcela)
-                        if ordem_parc[-2] != ordem_parc[-1]:
-                            while ordem_parc[-2] != ordem_parc[-1]:
-                                utils.descerECopiar()
-                                proxima_parcela = paste()
-                                ordem_parc.append(proxima_parcela)
-                                utils.checarFailsafe()
-                                erro_parcela = utils.encontrarImagem(r'Imagens\ErroParcela.png')
-                                if type(erro_parcela) == pyscreeze.Box:
-                                    press("enter")
-                                    utils.cancelar2()
-                                    return robozinho()
-                            ordem_parc.pop()
-                            valor_parcela = valor_total_da_nf / len(ordem_parc)
-                            valor_parcela = "{:.2f}".format(valor_parcela)
-                            utils.clicarValorParcela()
-                            for vezes in range(len(ordem_parc)):
-                                write(valor_parcela, interval=0.08)
-                                press("left")
-                                press("down")
-                                sleep(0.8)
-                            utils.checarFailsafe()
-                            valor_parcela = utils.formatador3(valor_parcela)
-                            valor_atingido = valor_parcela * len(ordem_parc)
-                            sleep(2)
-                            if valor_atingido != valor_total_da_nf:
-                                diferenca_NF_siga = valor_atingido - valor_total_da_nf
-                                valor_ultima_parcela = valor_parcela - diferenca_NF_siga
-                                valor_ultima_parcela = "{:.2f}".format(valor_ultima_parcela)
-                                write(valor_ultima_parcela, interval=0.08)
-                                sleep(2)
-                utils.clicarNaturezaDuplicata()
-                sleep(0.6)
-                hotkey("ctrl", "c", interval=0.2)
-                natureza_perc = paste() 
-                if natureza_perc != "0,00":
-                    lista_perc = []
-                    while round(sum(lista_perc),2) < 100.0:
-                        natureza_perc = utils.formatador3(natureza_perc)
-                        lista_perc.append(natureza_perc)
-                        utils.descerECopiar()
-                        natureza_perc = paste() 
-                    maior_perc = max(lista_perc)
-                    natureza_duplicata_clique = utils.encontrarImagemLocalizada(r'Imagens\naturezaDuplicata.png')
-                    x, y = natureza_duplicata_clique
-                    mouseClique(x,y)
-                    press("up")
-                    sleep(0.2)
-                    hotkey("ctrl", "c", interval=0.1)
-                    utils.checarFailsafe()
-                    perc_majoritario = paste()
-                    perc_majoritario = utils.formatador3(perc_majoritario)
-                    while perc_majoritario != maior_perc:
-                        utils.descerECopiar()
-                        perc_majoritario = paste()
-                        perc_majoritario = utils.formatador3(perc_majoritario)
-                    press("left")
-                    hotkey("ctrl", "c", interval=0.1)
-                    natureza_duplicata = paste()
-                    hotkey(["shift", "tab"]*5, interval=0.2)
-                    write(natureza_duplicata)
-                    press("tab")
-                    sleep(1)
-                    utils.checarFailsafe()
         cont = 0
         while True:
             salvar = utils.encontrarImagemLocalizada(r'Imagens\salvarLancamento.png')
@@ -747,7 +754,7 @@ def robozinho():
         if type(erro_quantidade) == pyscreeze.Box:
             press("enter")
             utils.cancelarLancamento()
-            mudar_a_selecao = utils.encontrarImagemLocalizada(imagem=r'Imagens\mudarASelecao2.png')
+            mudar_a_selecao = utils.encontrarImagemLocalizada(imagem=r'Imagens\mudarASelecao.png')
             x, y = mudar_a_selecao
             mouseClique(x,y, clicks=2)
             sleep(0.3)
