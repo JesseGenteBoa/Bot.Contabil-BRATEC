@@ -33,12 +33,12 @@ def verificarValorDoItem(lista, indiceX):
     if valor_do_item_no_siga != valor_do_item_na_NF:
         write(lista[indiceX][0])
         sleep(0.8)
-        encontrar = utils.encontrarImagem(r'Imagens\valitenErrado.png')
+        encontrar = utils.encontrarImagem(r'_internal\Imagens\valitenErrado.png')
         utils.checarFailsafe()
         if type(encontrar) == pyscreeze.Box:
             press("enter")
             sleep(0.5)
-            encontrar = utils.encontrarImagem(r'Imagens\valitenErrado.png')
+            encontrar = utils.encontrarImagem(r'_internal\Imagens\valitenErrado.png')
             utils.checarFailsafe()
             if type(encontrar) == pyscreeze.Box:
                 press("enter")
@@ -71,7 +71,7 @@ def verificarValorDoItem(lista, indiceX):
                         utils.checarFailsafe()
                     else:
                         razoes, cancelar_lancamento = utils.contarItemFracionado(quantidade_siga, valor_unit_convertido, quantidade_convertida)
-                elif "pilha" in desc_prod:
+                elif "pilha" in desc_prod or "tubo isolante" in desc_prod:
                     quantidade_convertida = quantidade_NF * 2
                     if quantidade_convertida == quantidade_siga:
                         valor_unit_convertido = valor_unit_NF / 2
@@ -91,7 +91,7 @@ def verificarValorDoItem(lista, indiceX):
                         valor_unit_convertido = valor_do_item_na_NF / quantidade_siga
                         escreverValorUnit(valor_unit_convertido)
                         utils.checarFailsafe()
-                elif "pedrisco" in desc_prod or "cabo" in desc_prod or "manta" in desc_prod or "lona" in desc_prod:
+                elif "pedrisco" in desc_prod or "cabo" in desc_prod[:4] or "manta" in desc_prod or "lona" in desc_prod:
                     valor_unit_convertido = valor_do_item_na_NF / quantidade_siga
                     escreverValorUnit(valor_unit_convertido)
                     utils.checarFailsafe()
@@ -139,7 +139,7 @@ def selecionarCaso(natureza):
     "2050001": 3,
     "2040005": 4,
     "2020029": 5, "2020053": 5,
-    "2020018": 6, "2040001": 6, "2040003": 6, "2020017": 6
+    "2020018": 6, "2040001": 6, "2040003": 6, "2020101": 6
 }
     return codigo.get(natureza, 7)
 
@@ -149,23 +149,23 @@ def definirTES(codigo, ctrl_imposto):
     global tes
     if codigo == 0:
         if ctrl_imposto != 0:
-            tes = "421"
+            tes = "438"
         else:
             tes = "420"
     elif codigo == 1:
         if ctrl_imposto == 0:
             tes = "402"
         elif ctrl_imposto in [6,1,2]:
-            tes = "405"
+            tes = "433"
         elif ctrl_imposto == 7:
-            tes = "407"
+            tes = "435"
         else:
-            tes = "403"
+            tes = "434"
     elif codigo == 2:
         if ctrl_imposto not in [7, 5, 4, 3]:
-            tes = "408"
+            tes = "436"
         else:
-            tes = "411"
+            tes = "437"
     elif codigo == 3:
         tes = "423"
     elif codigo == 4:
@@ -176,42 +176,42 @@ def definirTES(codigo, ctrl_imposto):
     elif codigo == 5:
         hotkey("ctrl", "c", interval=0.5)
         tes_padrao = paste()
-        if tes_padrao == "406":
-            tes = "406"
+        if tes_padrao == "406" or tes_padrao == "439":
+            tes = "439"
         else:
             if ctrl_imposto == 0:
                 tes = "402"
             elif ctrl_imposto == 7:
-                tes = "407"
+                tes = "435"
             elif ctrl_imposto in [6,1,2]:
-                tes = "405"
+                tes = "433"
             else:
-                tes = "403"
+                tes = "434"
     elif codigo == 6:
         hotkey("ctrl", "c", interval=0.5)
         tes_padrao = paste()
-        if tes_padrao == "406":
-            tes = "406"
+        if tes_padrao == "406" or tes_padrao == "439":
+            tes = "439"
         else:
             press(["left"]*2)
             sleep(0.7)
             hotkey("ctrl", "c", interval=0.5)
             item_especifico = paste()
             press(["right"]*2)
-            if item_especifico in ["1312000156", "999920091200", "999949011000", "1303102887", "1302578", "1303100449", "1303100601", "1303100602", "1303100603", "1312000122", "1312000124", "1312000125", "1312000126", "1312000144", "1308002", "1312024", "1303100550", "1303100600", "1303101290", "1303101291", "1303103835", "1303103836", "1303103837", "1312000141"]:
+            if item_especifico in ["0207000001", "1312000156", "999920091200", "999949011000", "1303102887", "1302578", "1303100449", "1303100601", "1303100602", "1303100603", "1312000122", "1312000124", "1312000125", "1312000126", "1312000144", "1308002", "1312024", "1303100550", "1303100600", "1303101290", "1303101291", "1303103835", "1303103836", "1303103837", "1312000141"]:
                 if ctrl_imposto != 0:
-                    tes = "421"
+                    tes = "438"
                 else:
                     tes = "420"
             else:
                 if ctrl_imposto == 0:
                     tes = "402"
                 elif ctrl_imposto in [6,1,2]:
-                    tes = "405"
+                    tes = "433"
                 elif ctrl_imposto == 7:
-                    tes = "407"
+                    tes = "435"
                 else:
-                    tes = "403"
+                    tes = "434"
     elif codigo == 7:
         cancelar_lancamento = True
         utils.cancelarLancamento()
