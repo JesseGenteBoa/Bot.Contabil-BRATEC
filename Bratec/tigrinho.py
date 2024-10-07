@@ -188,7 +188,6 @@ def robozinho():
                     aparece_enter2 = utils.encontrarImagem(r'_internal\Imagens\XMLEnter2.png')
                     utils.checarFailsafe()
                 caminho = "C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\" + chave_de_acesso + ".xml"
-                auxiliar = False
             except:
                 with open(caminho, encoding='utf-8') as fd:
                     doc = xmltodict.parse(fd.read(), attr_prefix="@", cdata_key="#text")
