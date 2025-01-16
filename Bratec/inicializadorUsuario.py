@@ -11,7 +11,6 @@ import pyscreeze
 
 FAILSAFE = True
 
-
 def inicializarUsuario():
     ver_documento = r'Imagens\verDocumentos.png'
     utils.insistirNoClique(ver_documento, cliques=1)
@@ -33,6 +32,7 @@ def inicializarUsuario():
     servico = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=servico, options=options)
     driver.get(link)
+    utils.checarFailsafe()
         
         
     sleep(2)
@@ -52,5 +52,11 @@ def inicializarUsuario():
     hotkey("alt", "tab", interval=0.1)
     hotkey("ctrl", "w")
     hotkey("alt", "tab", interval=0.1)
-    sleep(7)
+    while True:
+        try:
+            abriu = driver.find_element(By.XPATH, '/html/body/app-root/app-main/div/po-toolbar/div/div[2]/po-toolbar-profile/div/po-avatar/div/po-icon')
+            break
+        except:
+            sleep(1)
+    utils.checarFailsafe()
 
