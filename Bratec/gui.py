@@ -1,19 +1,19 @@
 from pathlib import Path
 from PIL import ImageTk, Image
-from concurrent.futures import ThreadPoolExecutor
 from tkinter import Tk, Canvas, Button, PhotoImage, Label, IntVar
-from tigrinho import robozinho, FailSafeException
+from tigrinho import robozinho
 from pyautogui import FAILSAFE, FailSafeException
 from time import sleep
-from utils import abrirLinkSelenium, tratarLista
+from utils import abrirLinkSelenium, tratarLista, checarFailsafe
 from inicializadorUsuario import inicializarUsuario
 import mensagens
 import threading
 
 
-
 FAILSAFE = True
 continuar_loop = False
+abortar = False
+resetar = False
 lancadas = 0
 sem_boleto = []
 processo_bloqueado = []
@@ -24,15 +24,24 @@ nao_lancadas = []
 
 def ativarRobozinho():
     global continuar_loop, lancadas, qtd_lancadas, qtd_sem_boleto, qtd_processo_bloqueado, qtd_processo_errado, qtd_XML_ilegivel, qtd_nao_lancadas
-    global sem_boleto, processo_bloqueado, processo_errado, XML_ilegivel, nao_lancadas
+    global sem_boleto, processo_bloqueado, processo_errado, XML_ilegivel, nao_lancadas, resetar
 
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(robozinho)   
-            s_boleto, proc_bloqueado, proc_errado, xml_ilegivel, n_lancadas, abortar = future.result()
+        if resetar == True:
+            s_boleto, proc_bloqueado, proc_errado, xml_ilegivel, n_lancadas, abortar = robozinho(resetar)
+            resetar = False
+        else:
+            s_boleto, proc_bloqueado, proc_errado, xml_ilegivel, n_lancadas, abortar = robozinho()
+           
+    except FailSafeException as pf:
+        continuar_loop = False
+    
+    finally:
         if abortar == False:
             lancadas += 1
             qtd_lancadas.set(lancadas)
+        else:
+            continuar_loop = False
             
         sem_boleto = tratarLista(sem_boleto, s_boleto)
         processo_bloqueado = tratarLista(processo_bloqueado, proc_bloqueado)
@@ -45,20 +54,33 @@ def ativarRobozinho():
         qtd_processo_errado.set(len(processo_errado))
         qtd_XML_ilegivel.set(len(XML_ilegivel))
         qtd_nao_lancadas.set(len(nao_lancadas))
-
-
-    except FailSafeException:
-        continuar_loop = False
-        raise FailSafeException
+        checarFailsafe()
     
+
+def resetarBot():
+    global resetar
+    sem_boleto.clear()
+    processo_bloqueado.clear()
+    processo_errado.clear()
+    XML_ilegivel.clear()
+    nao_lancadas.clear()
+    qtd_sem_boleto.set(0)
+    qtd_processo_bloqueado.set(0)
+    qtd_processo_errado.set(0)
+    qtd_XML_ilegivel.set(0)
+    qtd_nao_lancadas.set(0)
+    resetar = True
+ 
 
 def abrirGui():
     global qtd_lancadas, qtd_sem_boleto, qtd_processo_bloqueado, qtd_processo_errado, qtd_XML_ilegivel, qtd_nao_lancadas
 
     def rodarRobozinho():
+        global continuar_loop
         ativarRobozinho()
         if continuar_loop:
             window.after(1, rodarRobozinho())
+            checarFailsafe()
 
     def comecar_loop():
         global continuar_loop
@@ -69,10 +91,10 @@ def abrirGui():
         sleep(1)
         window.iconify()
         try:
-            threading.Thread(target=funcao).start()
+            threading.Thread(target=funcao, daemon=True).start()
+            checarFailsafe()
         except:
             raise FailSafeException
-
 
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"Imagens")
@@ -319,7 +341,7 @@ def abrirGui():
         image=button_image_3,
         borderwidth=5,
         highlightthickness=0,
-        command=lambda: abrirLinkSelenium(sem_boleto),
+        command=lambda: threading.Thread(target=abrirLinkSelenium, args=(sem_boleto,), daemon=True).start(),
         relief="groove",
         cursor="hand2"
     )
@@ -336,7 +358,7 @@ def abrirGui():
         image=button_image_4,
         borderwidth=5,
         highlightthickness=0,
-        command=lambda: abrirLinkSelenium(processo_bloqueado),
+        command=lambda: threading.Thread(target=abrirLinkSelenium, args=(processo_bloqueado,), daemon=True).start(),
         relief="groove",
         cursor="hand2"
     )
@@ -353,7 +375,7 @@ def abrirGui():
         image=button_image_5,
         borderwidth=5,
         highlightthickness=0,
-        command=lambda: abrirLinkSelenium(XML_ilegivel),
+        command=lambda: threading.Thread(target=abrirLinkSelenium, args=(XML_ilegivel,), daemon=True).start(),
         relief="groove",
         cursor="hand2"
     )
@@ -370,7 +392,7 @@ def abrirGui():
         image=button_image_6,
         borderwidth=5, 
         highlightthickness=0,
-        command=lambda: abrirLinkSelenium(processo_errado),
+        command=lambda: threading.Thread(target=abrirLinkSelenium, args=(processo_errado,), daemon=True).start(),
         relief="groove",
         cursor="hand2"
     )
@@ -381,6 +403,23 @@ def abrirGui():
         height=33.0
     )
 
+    button_image_7 = PhotoImage(
+        file=relative_to_assets("eqs_engenharia_logo.png"))
+    button_7 = Button(
+        image=button_image_7,
+        borderwidth=2,
+        highlightthickness=0,
+        command=lambda: resetarBot(),
+        relief="groove",
+        cursor="hand2"
+    )
+    button_7.place(
+        x=590,
+        y=20,
+        width=166.0,
+        height=100.0
+    )
+
     canvas.create_rectangle(
         14.999999999999886,
         21.000000000000057,
@@ -388,13 +427,6 @@ def abrirGui():
         406.00000000000006,
         fill="#ffffff",
         outline="")
-
-    primeira_logo = r"Imagens\eqs_engenharia_logo.png"
-    imagem_logo_direita = ImageTk.PhotoImage(Image.open(primeira_logo)) 
-    label_logo_direita = Label(window, image=imagem_logo_direita, bg=cor_fundo)
-    label_logo_direita.image = imagem_logo_direita
-    label_logo_direita.place(x=590, y=20)
-
 
     segunda_logo = r"Imagens\logoBratec.png"
     imagem_logo_esquerda = ImageTk.PhotoImage(Image.open(segunda_logo)) 
@@ -405,3 +437,4 @@ def abrirGui():
     window.resizable(False, False)
     window.mainloop()
 
+    
