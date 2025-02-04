@@ -60,3 +60,6 @@ def inicializarUsuario():
             sleep(1)
     utils.checarFailsafe()
 
+
+
+   
