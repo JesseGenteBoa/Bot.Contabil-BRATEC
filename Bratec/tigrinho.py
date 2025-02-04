@@ -1,5 +1,4 @@
-from pyautogui import hotkey, press, write, FAILSAFE, FailSafeException
-from pydirectinput import click as mouseClique, moveTo
+from pyautogui import hotkey, press, write, FAILSAFE, FailSafeException, click as mouseClique, moveTo
 from selenium import webdriver                         
 from selenium.webdriver.common.by import By
 from pyperclip import paste, copy     
@@ -13,7 +12,6 @@ import operadoresLancamento
 
 
 FAILSAFE = True
-contador = 0
 sem_boleto = []
 processo_bloqueado = []
 processo_errado = []
@@ -29,7 +27,7 @@ mensagem_xi = "Processo com um XML que não consigo ler."
 cnpj_dict = {'27462720000125': '01', '27462720000397': '03', '27462720000478': '04', '27462720000559': '05', '27462720000630': '06'}
 
 
-def robozinho():
+def robozinho(resetar=False):
     try:
         ver_documento = r'Imagens\verDocumentos.png'
         utils.insistirNoClique(ver_documento, cliques=1)
@@ -43,8 +41,7 @@ def robozinho():
                     break
         hotkey("alt", "d", interval=0.1)
         sleep(0.5)
-        hotkey("ctrl", "c")
-        sleep(0.5)
+        hotkey("ctrl", "c", interval=0.5)
         link = paste()
         options = webdriver.ChromeOptions()
         options.add_argument(r'user-data-dir=C:\Users\Usuario\AppData\Local\Google\Chrome\User Data\Profile Selenium')
@@ -54,6 +51,11 @@ def robozinho():
         sleep(2)
         tempo_max = 0
 
+        if resetar == True:
+            lista_reset = [sem_boleto, processo_bloqueado, processo_errado, XML_ilegivel, nao_lancadas, processos_ja_vistos]
+            for lista in lista_reset:
+                lista.clear()
+            
 
         while True:
             try:
@@ -123,6 +125,7 @@ def robozinho():
 
         caminho = "C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\" + chave_de_acesso + ".xml"
 
+        aux = False
         while True:
             try:
                 with open(caminho) as fd:
@@ -134,27 +137,28 @@ def robozinho():
                     break
             except FileNotFoundError:
                 while True:
-                    exportarXML = r'Imagens\exportarXML.png'
-                    encontrar = utils.encontrarImagemLocalizada(exportarXML)
-                    if type(encontrar) != tuple:  
-                        utils.insistirNoClique(exportarXML)
+                    utils.clicarMicrosiga()
+                    sleep(1)
+                    x, y = utils.encontrarImagemLocalizada(r'Imagens\exportarXML.png')
+                    mouseClique(x, y, clicks=2)
+                    sleep(2)
+                    caixa_de_texto = utils.encontrarImagemLocalizada(r'Imagens\clicarServidor.png')
+                    if type(caixa_de_texto) != tuple:  
+                        mouseClique(x, y, clicks=2)
                         sleep(2)
+                        utils.checarFailsafe()
                         caixa_de_texto = utils.encontrarImagemLocalizada(r'Imagens\clicarServidor.png')
-                        if type(caixa_de_texto) == tuple:
-                            break
-                    else:
-                        x, y = encontrar
-                        mouseClique(x,y, clicks=2)
+                    if type(caixa_de_texto) == tuple:
                         break
                 sleep(2)
-                x, y = caixa_de_texto
+                x, y = utils.encontrarImagemLocalizada(r'Imagens\clicarServidor.png')
                 mouseClique(x,y, clicks=3, interval=0.07)
                 copy("C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\")
                 hotkey("ctrl", "v")
                 sleep(1)
                 press(["tab"]*6, interval=0.5)
-                press("enter")
-                sleep(0.8)
+                press("enter", interval=0.8)
+                utils.checarFailsafe()
                 caixa_de_texto = utils.encontrarImagemLocalizada(r'Imagens\clicarServidor.png')
                 if type(caixa_de_texto) == tuple:
                     botao_salvar = utils.encontrarImagemLocalizada(r'Imagens\botaoSalvar1.png')
@@ -162,23 +166,30 @@ def robozinho():
                     mouseClique(x,y, clicks=2)
                 cont=0
                 while True:
-                    aparece_enter = utils.encontrarImagem(r'Imagens\XMLEnter.png')
-                    if type(aparece_enter) == pyscreeze.Box:
-                        press("enter")
-                        sleep(0.8)
-                    aparece_enter2 = utils.encontrarImagem(r'Imagens\XMLEnter2.png')
-                    if type(aparece_enter2) == pyscreeze.Box:
+                    aparece_enter = utils.encontrarImagemLocalizada(r'Imagens\XMLEnter.png')
+                    if type(aparece_enter) == tuple:
+                        press("enter", interval=0.5)
+                    aparece_enter2 = utils.encontrarImagemLocalizada(r'Imagens\XMLEnter2.png')
+                    if type(aparece_enter2) == tuple:
+                        while type(aparece_enter2) == tuple:
+                            sleep(1)
+                            press("enter", interval=0.5)
+                            aparece_enter2 = utils.encontrarImagemLocalizada(r'Imagens\XMLEnter2.png')
                         break
-                while type(aparece_enter2) == pyscreeze.Box:
-                    press("enter")
-                    sleep(0.5)
-                    aparece_enter2 = utils.encontrarImagem(r'Imagens\XMLEnter2.png')
                 caminho = "C:\\Users\\Usuario\\Desktop\\xmlFiscalio\\" + chave_de_acesso + ".xml"
-                auxiliar = False
+                aux = True
             except:
-                with open(caminho, encoding='utf-8') as fd:
-                    doc = xmltodict.parse(fd.read(), attr_prefix="@", cdata_key="#text")
-                    break
+                try:
+                    with open(caminho, encoding='utf-8') as fd:
+                        doc = xmltodict.parse(fd.read(), attr_prefix="@", cdata_key="#text")
+                        break
+                except xmltodict.expat.ExpatError as e:
+                    if aux == True:
+                        utils.tratarXmlIlegivel(XML_ilegivel, nao_lancadas, link, mensagem_xi, aux)
+                        return robozinho()
+                    else:
+                        utils.tratarXmlIlegivel(XML_ilegivel, nao_lancadas, link, mensagem_xi)
+                        return robozinho()
         
         
         processador = extratorXML.ProcessadorXML(doc, cnpj_dict)
@@ -238,14 +249,12 @@ def robozinho():
             if type(abriu_a_tela) == tuple:
                 break    
         while True:
-            press("tab")
-            sleep(0.7)
+            press("tab", interval=0.7)
             hotkey("ctrl", "c")
             filial_pedido = paste()
             if filial_pedido == filial_xml:
                 press("tab", interval=0.5)
-                press("enter")
-                sleep(1)
+                press("enter", interval=1)
                 clicar_confirmar = utils.encontrarImagemLocalizada(r'Imagens\clicarConfirmar.png')
                 if type(clicar_confirmar) == tuple:
                     cont = 0
@@ -258,8 +267,7 @@ def robozinho():
             else:
                 try:
                     press(["tab"]*2, interval=0.5)
-                    press("enter")
-                    sleep(1)
+                    press("enter", interval=1)
                     clicar_cancelar = utils.encontrarImagemLocalizada(r'Imagens\CancelarFilial.png')
                     if type(clicar_cancelar) == tuple:
                         while type(clicar_cancelar) == tuple:
@@ -283,8 +291,7 @@ def robozinho():
             aparece_enter2 = utils.encontrarImagem(r'Imagens\TES102.png')
             if type(aparece_enter2) == pyscreeze.Box:
                 sleep(0.2)
-                press("enter")
-                sleep(0.2)
+                press("enter", interval=0.2)
                 press(["tab"]*2)
                 sleep(0.2)
                 write("102")
@@ -307,8 +314,7 @@ def robozinho():
             fornecedor_bloqueado = utils.encontrarImagem(r'Imagens\FornecedorBloqueado.png')
             if type(lancamento_retroativo) == pyscreeze.Box or type(nota_ja_lancada) == pyscreeze.Box or type(fornecedor_bloqueado) == pyscreeze.Box:
                 sleep(1)
-                press("enter")
-                sleep(1)
+                press("enter", interval=1)
                 if type(fornecedor_bloqueado) == pyscreeze.Box:
                     utils.acrescerLista(processo_bloqueado, nao_lancadas, link, mensagem_pb)
                 cont = 0
@@ -575,7 +581,6 @@ def robozinho():
                     write(valor_parc, interval=0.03)
                     press("left")
                     lista_parc.append(float(valor_parc))
-                    print(lista_parc)
                 else:
                     valor_parcela = paste()
                     valor_parcela = utils.formatador4(valor_parcela)
@@ -629,8 +634,7 @@ def robozinho():
                     for vezes in range(len(ordem_parc)):
                         write(valor_parcela, interval=0.08)
                         press("left")
-                        press("down")
-                        sleep(0.8)
+                        press("down", interval=0.8)
                     valor_parcela = utils.formatador3(valor_parcela)
                     valor_atingido = valor_parcela * len(ordem_parc)
                     sleep(2)
@@ -660,8 +664,7 @@ def robozinho():
             natureza_duplicata_clique = utils.encontrarImagemLocalizada(r'Imagens\naturezaDuplicata.png')
             x, y = natureza_duplicata_clique
             mouseClique(x,y)
-            press("up")
-            sleep(0.2)
+            press("up", interval=0.2)
             hotkey("ctrl", "c", interval=0.1)
             perc_majoritario = paste()
             perc_majoritario = utils.formatador3(perc_majoritario)
@@ -674,8 +677,7 @@ def robozinho():
             natureza_duplicata = paste()
             hotkey(["shift", "tab"]*5, interval=0.2)
             write(natureza_duplicata)
-            press("tab")
-            sleep(1)
+            press("tab", interval=1)
 
 
         salvar = utils.encontrarImagemLocalizada(r'Imagens\salvarLancamento.png')
@@ -703,8 +705,7 @@ def robozinho():
             sleep(0.5)
             mouseClique(x,y, clicks=2)
             write("NF", interval=0.1)
-            press("enter")
-            sleep(0.5)
+            press("enter", interval=0.5)
             mouseClique(salvarx,salvary, clicks=2)
         erro_esquisito = utils.encontrarImagem(r'Imagens\erroEsquisito.png')
         if type(erro_esquisito) == pyscreeze.Box:
@@ -729,14 +730,13 @@ def robozinho():
             sleep(0.2)
             etapa_final = utils.encontrarImagem(r'Imagens\etapaFinal.png')
         press(["tab"]*3, interval=0.9)
-        press("enter")
-        sleep(1.5)
+        press("enter", interval=1.5)
         ultimo_enter = utils.encontrarImagem(r'Imagens\finalizarLancamento.png')
         if type(ultimo_enter) != pyscreeze.Box:
             while type(ultimo_enter) != pyscreeze.Box:
                 sleep(0.2)
                 ultimo_enter = utils.encontrarImagem(r'Imagens\finalizarLancamento.png')
-                cont +=1
+                cont+=1
                 if cont == 6:
                     press("enter")
                     cont = 0
@@ -764,11 +764,10 @@ def robozinho():
                     moveTo(150, 100)
             if cont2 == 5:
                 break
-            cont2 +=1
+            cont2+=1
         
 
-        hotkey("win", "d")
-        sleep(0.2)
+        hotkey("win", "d", interval=0.2)
 
 
         abortar = False
@@ -777,3 +776,5 @@ def robozinho():
         abortar = True
         return sem_boleto, processo_bloqueado, processo_errado, XML_ilegivel, nao_lancadas, abortar
 
+
+   
