@@ -777,4 +777,4 @@ def robozinho(resetar=False):
         return sem_boleto, processo_bloqueado, processo_errado, XML_ilegivel, nao_lancadas, abortar
 
 
-   
+    
